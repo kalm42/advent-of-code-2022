@@ -3,31 +3,25 @@ const fs = require('fs');
 function main() {
     const dataa = fs.readFileSync('input.txt', 'utf8');
 
-    let numberOfTreesVisible = 0;
     let x = 0;
     let y = 0;
     const map = dataa.split(/\r?\n/).map((y) => y.split('').map((x) => parseInt(x)));
 
+    let highScenicScore = 0;
+
     while (y < map.length) {
-        let isVisible = false;
-        if (lookUp(map, x, y, map[y][x])) {
-            isVisible = true
-        }
+        const up = lookUp(map, x, y, map[y][x]);
 
-        if (!isVisible && lookDown(map, x, y, map[y][x])) {
-            isVisible = true
-        }
+        const down = lookDown(map, x, y, map[y][x])
 
-        if (!isVisible && lookLeft(map, x, y, map[y][x])) {
-            isVisible = true
-        }
+        const left = lookLeft(map, x, y, map[y][x])
 
-        if (!isVisible && lookRight(map, x, y, map[y][x])) {
-            isVisible = true
-        }
+        const right = lookRight(map, x, y, map[y][x])
         
-        if (isVisible) {
-            numberOfTreesVisible += 1;
+        const total = up * left * right * down;
+
+        if (total > highScenicScore) {
+            highScenicScore = total;
         }
 
         if (inBounds(map, x + 1, y)) {
@@ -38,7 +32,7 @@ function main() {
         }
     }
 
-    console.log({numberOfTreesVisible});
+    console.log({highScenicScore});
 
 }
 main();
@@ -55,12 +49,12 @@ function lookUp(map, x, y, currentTree) {
     if (inBounds(map, x, up)) {
         const upTree = map[up][x];
         if (upTree < currentTree) {
-            return lookUp(map, x, up, currentTree)
+            return 1 + lookUp(map, x, up, currentTree)
         }
-        return false;
+        return 1;
     };
 
-    return true;
+    return 0
 }
 
 function lookDown(map, x, y, currentTree) {
@@ -71,12 +65,12 @@ function lookDown(map, x, y, currentTree) {
     if (inBounds(map, x, down)) {
         const downTree = map[down][x];
         if (downTree < currentTree) {
-            return lookDown(map, x, down, currentTree)
+            return 1 + lookDown(map, x, down, currentTree)
         }
-        return false;
+        return 1;
     }
 
-    return true;
+    return 0;
 }
 
 function lookLeft(map, x, y, currentTree) {
@@ -87,12 +81,12 @@ function lookLeft(map, x, y, currentTree) {
     if (inBounds(map, left, y)) {
         const leftTree = map[y][left];
         if (leftTree < currentTree) {
-            return lookLeft(map, left, y, currentTree)
+            return 1+ lookLeft(map, left, y, currentTree)
         }
-        return false;
+        return 1
     }
 
-    return true;
+    return 0
 }
 
 function lookRight(map, x, y, currentTree) {
@@ -103,13 +97,13 @@ function lookRight(map, x, y, currentTree) {
     if (inBounds(map, right, y)) {
         const rightTree = map[y][right];
         if (rightTree < currentTree) {
-            return lookRight(map, right, y, currentTree)
+            return 1 + lookRight(map, right, y, currentTree)
         }
-        return false;
+        return 1
     }
 
-    return true;
+    return 0
 }
 
 // part 1 = 1_533
-// part 2 = 
+// part 2 = 345_744
