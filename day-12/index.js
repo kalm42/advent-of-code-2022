@@ -4,11 +4,12 @@ function main() {
     const start = Date.now();
     const map = [];
     const queue = [];
-    const traveled = {};
+    let traveled = {};
     let rows = 0;
     let cols = 0;
-    let startingPoint;
+    let startingPoints = [];
     let endingPoint;
+    const shortestPath = [];
 
     fs.readFileSync('./input.txt', 'utf8')
         .split(/\r?\n/)
@@ -16,7 +17,12 @@ function main() {
             if (rows === 0) {
                 rows = lines.length;
             }
-            const row = line.trim().split('');
+            const row = line.trim().split('').map((char, x) => {
+                if (char === "a") {
+                    startingPoints.push({x, y, steps: 0});
+                }
+                return char;
+            })
             if (cols === 0) {
                 cols = row.length;
             }
@@ -24,7 +30,7 @@ function main() {
             // get starting point
             const x = row.indexOf('S');
             if (x > -1) {
-                startingPoint = {x, y, steps: 0, travelDiary: [{x, y}]};
+                startingPoints.push({x, y, steps: 0});
             }
 
             // get ending point
@@ -37,67 +43,69 @@ function main() {
             map.push(row);
     })
 
-    // Add starting point to queue
-    queue.push(startingPoint);
-    traveled[[startingPoint.x, startingPoint.y].join(',')] = true;
-
-    while (queue.length > 0) {
-        const {x, y, steps, travelDiary} = queue.shift();
+    startingPoints.forEach(startingPoint => {
+        // Add starting point to queue
+        queue.push(startingPoint);
+        traveled[[startingPoint.x, startingPoint.y].join(',')] = true;
         
-        // if (x === 90 && y === 20) {
-        //     debugger
-        // }
-
-        // If we're at the end, return the number of steps
-        if (x === endingPoint.x && y === endingPoint.y) {
-            console.log({steps, time: Date.now() - start});
-            travelDiary.forEach((travel) => {
-                console.log(`(${travel.x}, ${travel.y}): ${map[travel.y][travel.x]}`)
-            })
-            return;
-        }
-
-        // get the value of the current location
-        const currentValue = (map[y][x] === 'S' ? 'a' : map[y][x]).charCodeAt(0);
-
-        // travel up
-        if ((y - 1) >= 0 && !traveled[[x, y - 1].join(',')]) {
-            const upValue = map[y - 1][x].charCodeAt(0);
-            if (canTravel(currentValue, upValue)) {
-                queue.push({x, y: y - 1, steps: steps + 1, travelDiary: [...travelDiary, {x, y: y - 1}]});
-                traveled[[x, y - 1].join(',')] = true;
+        while (queue.length > 0) {
+            const {x, y, steps} = queue.shift();
+            
+            // If we're at the end, return the number of steps
+            if (x === endingPoint.x && y === endingPoint.y) {
+                debugger
+                // minus 2, 1 for starting and one for finishing
+                shortestPath.push(steps - 2);
+                queue.length = 0;
+                traveled = {};
+                // console.log({steps: steps - 2, time: Date.now() - start});
+                continue;
             }
-        }
-
-        // travel down
-        if ((y + 1) < rows && !traveled[[x, y + 1].join(',')]) {
-            const downValue = map[y + 1][x].charCodeAt(0);
-            if (canTravel(currentValue, downValue)) {
-                queue.push({x, y: y + 1, steps: steps + 1, travelDiary: [...travelDiary, {x, y: y + 1}]});
-                traveled[[x, y + 1].join(',')] = true;
+            
+            // get the value of the current location
+            const currentValue = (map[y][x] === 'S' ? 'a' : map[y][x]).charCodeAt(0);
+            
+            // travel up
+            if ((y - 1) >= 0 && !traveled[[x, y - 1].join(',')]) {
+                const upValue = map[y - 1][x].charCodeAt(0);
+                if (canTravel(currentValue, upValue)) {
+                    queue.push({x, y: y - 1, steps: steps + 1});
+                    traveled[[x, y - 1].join(',')] = true;
+                }
             }
-        }
-
-        // travel left
-        if ((x - 1) >= 0 && !traveled[[x - 1, y].join(',')]) {
-            const leftValue = map[y][x - 1].charCodeAt(0);
-            if (canTravel(currentValue, leftValue)) {
-                queue.push({x: x - 1, y, steps: steps + 1, travelDiary: [...travelDiary, {x: x - 1, y}]});
-                traveled[[x - 1, y].join(',')] = true;
+            
+            // travel down
+            if ((y + 1) < rows && !traveled[[x, y + 1].join(',')]) {
+                const downValue = map[y + 1][x].charCodeAt(0);
+                if (canTravel(currentValue, downValue)) {
+                    queue.push({x, y: y + 1, steps: steps + 1});
+                    traveled[[x, y + 1].join(',')] = true;
+                }
             }
-        }
-
-        // travel right
-        if ((x + 1) < cols && !traveled[[x + 1, y].join(',')]) {
-            const rightValue = map[y][x + 1].charCodeAt(0);
-            if (canTravel(currentValue, rightValue)) {
-                queue.push({x: x + 1, y, steps: steps + 1, travelDiary: [...travelDiary, {x: x + 1, y}]});
-                traveled[[x + 1, y].join(',')] = true;
+            
+            // travel left
+            if ((x - 1) >= 0 && !traveled[[x - 1, y].join(',')]) {
+                const leftValue = map[y][x - 1].charCodeAt(0);
+                if (canTravel(currentValue, leftValue)) {
+                    queue.push({x: x - 1, y, steps: steps + 1});
+                    traveled[[x - 1, y].join(',')] = true;
+                }
             }
+            
+            // travel right
+            if ((x + 1) < cols && !traveled[[x + 1, y].join(',')]) {
+                const rightValue = map[y][x + 1].charCodeAt(0);
+                if (canTravel(currentValue, rightValue)) {
+                    queue.push({x: x + 1, y, steps: steps + 1});
+                    traveled[[x + 1, y].join(',')] = true;
+                }
+            }
+            
+            queue.sort((a, b) => a.steps - b.steps);
         }
+    });
 
-        queue.sort((a, b) => a.steps - b.steps);
-    }
+    console.log(Math.min(...shortestPath));
 }
 
 function canTravel(whereIam, whereIWantToGo) {
