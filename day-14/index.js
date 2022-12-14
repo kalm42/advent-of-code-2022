@@ -14,9 +14,6 @@ function main() {
     // get the min and max coords
     const [min, max] = getMinMaxCoords(rockCoordinates);
 
-    // create a map of the area
-    // console.log(printMap(rockCoordinates, [], min, max, sandPourCoordinate))
-
     // drop sand and print the map until the sand falls off the map
     let intoTheAbyssWithYou = false;
     while(!intoTheAbyssWithYou) {
@@ -25,15 +22,15 @@ function main() {
             sandGrainCoordinates.push(newSandGrainCoordinates);
             // sort the sand grains by x and then by y
             sandGrainCoordinates.sort((a, b) => a.x - b.x || a.y - b.y);
-            // console.log(printMap(rockCoordinates, sandGrainCoordinates, min, max, sandPourCoordinate))
         } else {
             intoTheAbyssWithYou = true;
         }
     }
-
+    
+    console.log(printMap(rockCoordinates, sandGrainCoordinates, sandPourCoordinate))
 
     const end = Date.now();
-    console.log({count: sandGrainCoordinates.length, time: end - start});
+    console.log({count: sandGrainCoordinates.length + 1, time: end - start});
 }
 main();
 
@@ -53,7 +50,7 @@ function dropSand(rockCoordinates, sandGrainCoordinates, sandPourCoordinate, min
                 continue;
             // we're going off the map
             case 0:
-                return null;
+                canMove = false;
             // we hit another grain of sand or rock
             case -1:
             default:
@@ -69,7 +66,7 @@ function dropSand(rockCoordinates, sandGrainCoordinates, sandPourCoordinate, min
                 continue;
             // we're going off the map
             case 0:
-                return null;
+                canMove = false;
             // we hit another grain of sand or rock
             case -1:
             default:
@@ -85,7 +82,7 @@ function dropSand(rockCoordinates, sandGrainCoordinates, sandPourCoordinate, min
                 continue;
             // we're going off the map
             case 0:
-                return null;
+                canMove = false;
             // we hit another grain of sand or rock
             case -1:
             default:
@@ -94,12 +91,19 @@ function dropSand(rockCoordinates, sandGrainCoordinates, sandPourCoordinate, min
         canMove = false;
 
     }
+
+    // if the currentSandPosition is the same as the sandPourCoordinate return null
+    if (currentPosition.x === sandPourCoordinate.x && currentPosition.y === sandPourCoordinate.y) {
+        return null;
+    }
+
     return currentPosition;
 
     // closure functions
     function inBounds(a) {
         // is coordinate a  <= min or >= max
-        return a.x < min.x || a.x > max.x || a.y < min.y || a.y > max.y ? 0 : 1;
+        const floor = max.y;
+        return a.y < min.y || a.y > floor ? 0 : 1;
     }
 
     function check(b) {
@@ -201,7 +205,8 @@ function getMinMaxCoords(coordSets) {
     return [min, max];
 }
 
-function printMap(rockCoords, sandCoords, min, max, sandPourCoord) {
+function printMap(rockCoords, sandCoords, sandPourCoord) {
+    const [min, max] = getMinMaxCoords(rockCoords.concat(sandCoords));
     let map = '';
     let flatRockCoordSets = [];
     rockCoords.forEach(coordSet => {
@@ -241,3 +246,6 @@ function printMap(rockCoords, sandCoords, min, max, sandPourCoord) {
     map += '\n\n';
     return map;
 }
+
+// part 1 1330
+// part 2 7338
