@@ -5,50 +5,82 @@ function main() {
     const file = fs.readFileSync('./input.txt', 'utf8');
     const sensorsBeaconsEmpty = parse(file);
 
-    // given a sensor and beacon, the beacon is a manhattan distance from the 
-    // sensor, gather all coordinates that are of the same manhattan distance 
-    // or less
-    // Instead of filling in all the blanks and counting them
-    // I'll just count the 1 y-axis and check if that point is not a sensor, a
-    // beacon, or within the manhattan distance of a sensor and it's beacon.
+    // 5_870_800 covered locations
+    // 10_908_230_916_597 frequency
 
-    // 5_851_900 to low
-    // 5_870_800
-    // 10_548_183 too high
+    const frequencyMultiplier = 4_000_000;
+    const limit = 4_000_000;
+    const calculateFrequency = (x, y) => x * frequencyMultiplier + y;
+    let x1 = 0;
+    let y1 = null;
 
-    const { minX, maxX } = getMinMaxXY(sensorsBeaconsEmpty);
-
-    const y = 2_000_000;
-    let count = 0;
-    for (let x = minX; x < maxX; x += 1) {
-        let shouldCount = false;
-        sensorsBeaconsEmpty.forEach((point) => {
-            if (!shouldCount) {
-                const {x: x1, y: y1} = point;
-                const {x: x2, y: y2} = point.beacon;
-                const mdOfSensorToBeacon = point.md;
-                const mdOfHereToSensor = Math.abs(x - x1) + Math.abs(y - y1);
-                if (
-                    mdOfHereToSensor <= mdOfSensorToBeacon 
-                    && (x !== x1 || y !== y1)
-                    && (x !== x2 || y !== y2)
-                ) {
-                    shouldCount = true;
-                }
+    while (y1 === null) {
+        const tempYs = intersects(x1, sensorsBeaconsEmpty, limit);
+        
+        tempYs.forEach((ty) => {
+            if (!isCoordinateCovered(x1, ty, sensorsBeaconsEmpty)) {
+                y1 = ty;
             }
         });
-        if (shouldCount) {
-            count += 1;
+
+        if (y1 === null) {
+            x1 += 1;
         }
     }
-
-    // make map, then count negative values for one y axis
-    // console.log(printMap(sensorsBeaconsEmpty));
-
     const end = Date.now();
-    console.log({count, time: end - start});
+    console.log({frequency: calculateFrequency(x1, y1), time: end - start});
 }
 main();
+
+function intersects(x1, sensors, limit) {
+    let does = new Set()
+    
+    sensors.forEach((point) => {
+        const {x, y, md} = point;
+        const pointA = {x: x - md, y};
+        const pointB = {x: x, y: y + md};
+
+        const mAB = (pointB.y - pointA.y) / (pointB.x - pointA.x);
+        const bAB = (pointA.y - (pointA.x * mAB)) / 1;
+        const yAB = mAB * x1 + bAB;
+        if (yAB >= pointA.y && yAB <= pointB.y) {
+            does.add(yAB);
+        }
+
+        const pointC = {x: x + md, y};
+        const mBC = (pointC.y - pointB.y) / (pointC.x - pointB.x);
+        const bBC = (pointB.y - (pointB.x * mBC)) / 1;
+        const yBC = mBC * x1 + bBC;
+        if (yBC <= pointB.y && yBC >= pointC.y) {
+            does.add(yBC);
+        }
+
+        const pointD = {x, y: y - md};
+        const mCD = (pointD.y - pointC.y) / (pointC.x - pointD.x);
+        const bCD = (pointC.y - (pointC.x * mCD)) / 1;
+        const yCD = mCD * x1 + bCD;
+        if (yCD <= pointC.y && yCD >= pointD.y) {
+            does.add(yCD);
+        }
+    });
+
+    return [...does].map(y => y + 1).filter(y => y >= 0 && y <= limit);
+}
+
+function isCoordinateCovered(x, y, sensors) {
+    let covered = false;
+    sensors.forEach((point) => {
+        if (!covered) {
+            const {x: x2, y: y2, md} = point;
+            if (Math.abs(x - x2) + Math.abs(y - y2) <= md) {
+                covered = true;
+            }
+        }
+    });
+    return covered;
+}
+
+
 
 function parse(file) {
     const sensorsAndBeacons = new Map();
@@ -56,7 +88,7 @@ function parse(file) {
         const [[x], [y], [bx], [by]] = line.matchAll(/(-?\d+)/g)
         const md = Math.abs(Number(x) - Number(bx)) + Math.abs(Number(y) - Number(by))
         
-        sensorsAndBeacons.set(`${x},${y},${md}`, {
+        sensorsAndBeacons.set(`${x},${y}`, {
             x: Number(x), 
             y: Number(y), 
             type: 'sensor',
@@ -94,32 +126,3 @@ function getMinMaxXY(coordinateSets) {
 
     return {minX, maxX, minY, maxY, minMd, maxMd};
 }
-
-// function printMap(coordinateSets) {
-//     const {minX, maxX, minY, maxY} = getMinMaxXY(coordinateSets);
-//     let map = '';
-
-//     // y axis
-//     for (let y = minY; y <= maxY; y += 1) {
-//         // x axis
-//         for (let x = minX; x <= maxX; x += 1) {
-//             const point = coordinateSets.has(`${x},${y}`) ? coordinateSets.get(`${x},${y}`) : {type: ''};
-//             switch (point.type) {
-//                 case 'sensor':
-//                     map += 'S';
-//                     break;
-//                 case 'beacon':
-//                     map += 'B';
-//                     break;
-//                 case 'empty':
-//                     map += '#';
-//                     break;
-//                 default:
-//                     map += '.';
-//                     break;
-//             }
-//         }
-//         map += '\n';
-//     }
-//     return map;
-// }
